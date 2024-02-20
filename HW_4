@@ -1,0 +1,310 @@
+---
+title: "Homework 4"
+author: "Ben Lovelace"
+date: "BRL979"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.height=3, fig.width=4, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
+```
+
+```{r include=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(mosaic)
+library(kableExtra)
+library(tinytex)
+```
+
+------------------------------------------------------------------------
+
+# **Question 1:**
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+gas=read.csv("gasprices.csv")
+```
+
+### **Theory A:**
+
+Theory A states that Gas stations charge more if there is no direct contact in sight.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+comp_diffmean = diffmean(Price ~ Competitors,data=gas)
+
+comp_boot = do(10000)*diffmean(Price ~ Competitors, data=resample(gas))
+
+ggplot(comp_boot,aes(x=diffmean)) +
+  geom_histogram(color="skyblue4",fill="skyblue3") + ggtitle ("Difference in Mean Gas Prices between Competitors and No Competitors") + xlab("Differences in Mean Gas Prices")+ ylab("Count") + theme_minimal()
+
+comp_confint = confint(comp_boot,level=.95)
+comp_confint
+```
+
+The difference between mean gas prices for stations with competitors in sight and those without is `r round(comp_diffmean,3)`, with a confidence interval of `r round(comp_confint$upper,3)` to `r round(comp_confint$lower,3)`. The actual difference in means, about 3 cents per gallon, shows little practical significance. Additionally, Because 0 is between the upper and lower estimates, this difference statistically significant at the 5% level. Thus there is no statistic or practical evidence to support the theory that gas stations with competitors in sight charge less than those without
+
+### **Theory B:**
+
+Theory B states that the richer an area is, the more gas stations in the area will charge for gas.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(gas,aes(x=Price,y=Income)) +
+  geom_point(pch=20,color="indianred4") + ggtitle("Price of Gas vs. Income of ZIP Code") +
+  geom_smooth(method="lm")
+
+lm_income = lm(Income ~ Price, data=gas)
+price_per_tenth = (coef(lm_income)[2])/10
+
+income_boot = do(10000)*lm(Income~Price,data=resample(gas))
+income_confint = confint(income_boot, level = .95) %>%
+  filter(name=="Price")
+income_confint
+```
+
+For every tenth of a dollar per gallon, the income of the neighborhood increases by `r round(price_per_tenth,2)`, with a confidence interval of `r income_confint$upper` to `r income_confint$lower`. The data demonstrates statistical significance in the 95% interval. Thus, it can be concluded that gas stations in more affluent areas charge more.
+
+### **Theory C:**
+
+Theory C states that gas stations at stoplights charge more per gallon than those not at stoplights.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+light_diffmean = diffmean(Price ~ Stoplight,data=gas)
+light_diffmean
+
+light_boot = do(10000)*diffmean(Price ~ Stoplight, data=resample(gas))
+
+ggplot(light_boot,aes(x=diffmean)) +
+  geom_histogram(color="goldenrod4",fill="goldenrod3") + ggtitle ("Difference in Mean Gas Prices between Stoplight and No Stoplight") + xlab("Differences in Mean Gas Prices")+ ylab("Count") + theme_minimal()
+
+light_confint = confint(light_boot,level=.95)
+light_confint
+```
+
+The difference between mean gas prices for stations at stoplights and those without is `r round(light_diffmean,4)`, with a confidence interval of `r round(light_confint$upper,3)` to `r round(light_confint$lower,3)`. The actual difference in means, about 3 cents per gallon, shows little practical significance. Additionally, Because 0 is between the upper and lower estimates, this difference statistically significant at the 5% level. Thus there is no statistic or practical evidence to support the theory that gas stations with a stoplight in front charge more than those without.
+
+### **Theory D:**
+
+Theory D states that Gas stations with direct highway access charge more than those without.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+high_diffmean = diffmean(Price ~ Highway,data=gas)
+high_diffmean
+
+high_boot = do(10000)*diffmean(Price ~ Highway, data=resample(gas))
+
+ggplot(high_boot,aes(x=diffmean)) +
+  geom_histogram(color="palegreen4",fill="palegreen3") + ggtitle ("Difference in Mean Gas Prices between Highway and No Highway") + xlab("Differences in Mean Gas Prices")+ ylab("Count") + theme_minimal()
+
+high_confint = confint(high_boot,level=.95)
+high_confint
+```
+
+The difference between mean gas prices for stations at stoplights and those without is `r round(high_diffmean,3)`, with a confidence interval of `r round(high_confint$upper,3)` to `r round(high_confint$lower,3)`. The actual difference in means, about 2 cents per gallon, shows little practical significance. Because 0 is not between the upper and lower estimates, this difference is statistically significant at the 95% level. Meaning that the theory is correct, and gas stations do charge more if they have highway access, although not much more.
+
+### **Theory E:**
+
+Theory E states that Shell charges more than other non-Shell brands
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+gas_shell = mutate(gas,shell=Name=="Shell")
+
+shell_diffmean = diffmean(Price ~ shell,data=gas_shell)
+
+shell_boot = do(10000)*diffmean(Price ~ shell, data=resample(gas_shell))
+
+ggplot(shell_boot,aes(x=diffmean)) +
+  geom_histogram(color="hotpink4",fill="hotpink3") + ggtitle ("Difference in Mean Gas Prices between Shell and Other Brands") + xlab("Differences in Mean Gas Prices")+ ylab("Count") + theme_minimal()
+
+shell_confint = confint(shell_boot,level=.95)
+shell_confint
+```
+The difference between Shell stations and non-Shell stations is `r round(shell_diffmean,2)`, with Shell charging more on average, with a confidence interval of `r round(shell_confint$upper)` to `r round(shell_confint$lower)`. The data demonstrates statistical significance in the 5% interval, however, the data finds that Shell does charge more than other non-Shell brands.
+
+------------------------------------------------------------------------
+
+# **Question 2:**
+
+```{r include=FALSE}
+sclass = read.csv("sclass.csv")
+```
+
+### **Part A:**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sclass_2011 = filter(sclass,year==2011,trim=="63 AMG")
+boot_2011 = do(10000)*mean(~mileage,data=resample(sclass_2011))
+
+ggplot(boot_2011,aes(x=mean)) + 
+  geom_histogram(color="mediumorchid4",fill="mediumorchid2") + ggtitle("Mean Mileages of bootstrapped sample") + xlab("Mean Mileage") + theme_minimal()
+
+boot_2011_confint = confint(boot_2011,level=.95)
+boot_2011_confint
+```
+
+The average mileage of a 2011 S-Class 63 AMG is `r round(mean(~mileage, data=sclass_2011),2)` with a confidence interval of `r round(boot_2011_confint$upper)` to `r round(boot_2011_confint$lower)`
+
+### **Part B:**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sclass_2014 = filter(sclass,year==2014,trim=="550")
+sclass_2014 = mutate(sclass_2014,isblack=color=="Black")
+
+black_boot = do(10000)*prop(~isblack,data=resample(sclass_2014))
+ggplot(black_boot,aes(x=prop_TRUE)) +
+  geom_histogram(color="gold4",fill="gold3") + xlab("Proportion of Black SClasses") + ylab("Count") + ggtitle("Bootstrapped Proportions of Black Sclasses") + theme_minimal()
+
+boot_black_confint = confint(black_boot,level=.95)
+boot_black_confint
+```
+
+The proportion of all 2014 S-Class 550s painted black is `r round(prop(~isblack,data=sclass_2014),2)` with a confidence interval of `r round(boot_black_confint$upper,2)` to `r round(boot_black_confint$lower,2)`
+
+------------------------------------------------------------------------
+
+# **Question 3:**
+
+```{r include=FALSE}
+nbc = read.csv("nbc_pilotsurvey.csv")
+```
+
+### **Part A:**
+
+#### **Question:**
+
+The question I am trying to answer is which show did people report making them happier, My Name is Earl or Living with Ed.
+
+#### **Approach:**
+
+In order to answer this question I first found the difference in the reported mean happiness scores from the sample using diffmean, then bootstrapped new samples and found the diffmeans of those in order to report a 95% confidence interval
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+happy = filter(nbc,Show == "My Name is Earl"|Show=="Living with Ed")
+happy = mutate(happy,Earl = Show == "My Name is Earl")
+happy_diffmean = diffmean(Q1_Happy ~ Earl,data=happy)
+
+
+happy_boot = do(10000)*diffmean(Q1_Happy ~ Earl, data=resample(happy))
+
+ggplot(happy_boot,aes(x=diffmean)) +
+  geom_histogram(color="skyblue4",fill="skyblue3") + ggtitle ("Difference in Happiness between LWE and MNIE") + xlab("Differences in Mean Reported Happiness")+ ylab("Count") + theme_minimal()
+
+happy_confint = confint(happy_boot,level=.95)
+happy_confint
+```
+
+#### **Results:**
+
+I found that the mean of My Name is Earl's happiness score is `r round(mean(~Q1_Happy,data=filter(nbc,Show=="My Name is Earl")),2)`, while the mean of Living with Ed's is `r round(mean(~Q1_Happy,data=filter(nbc,Show=="Living with Ed")),2)`, for a difference of `r round(happy_diffmean,2)`, with a confidence interval of `r round(happy_confint$upper,2)` to `r round(happy_confint$lower,2)`.
+
+#### **Conclusion:**
+
+My results demonstrated that living with Ed consistently made viewers happier than My Name is Earl. The actual sample returned a higher mean of reported happiness, however, the confidence interval demonstrated statistical significance in the 5% interval, meaning that the difference in happiness between My Name is Earl and Living with Ed is likely negligible
+
+
+### **Part B:**
+
+#### **Question:**
+
+The question I am trying to answer is which show did people report making them feel more annoyed, The Apprentice: Los Angeles or The Biggest Loser
+
+#### **Approach:**
+
+In order to answer this question I first found the difference in the reported mean annoyance scores from the sample using diffmean, then bootstrapped new samples and found the diffmeans of those in order to report a 95% confidence interval
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Annoyed = filter(nbc,Show == "The Biggest Loser"|Show=="The Apprentice: Los Angeles")
+Annoyed = mutate(Annoyed,TBL = Show == "The Biggest Loser")
+
+Annoyed_diffmean = diffmean(Q1_Annoyed ~ TBL,data=Annoyed)
+
+Annoyed_boot = do(10000)*diffmean(Q1_Annoyed ~ TBL, data=resample(Annoyed))
+
+ggplot(Annoyed_boot,aes(x=diffmean)) +
+  geom_histogram(color="palegreen4",fill="palegreen3") + ggtitle ("Difference in Annoyedment between TBL and TALA") + xlab("Differences in Mean Reported Happiness")+ ylab("Count") + theme_minimal()
+
+Annoyed_confint = confint(Annoyed_boot,level=.95)
+Annoyed_confint
+```
+
+#### **Results:**
+
+I found that the mean of The Apprentices's happiness score is `r round(mean(~Q1_Annoyed,data=filter(nbc,Show=="The Apprentice: Los Angeles")),2)`, while the mean of Living with Ed's is `r round(mean(~Q1_Annoyed,data=filter(nbc,Show=="The Biggest Loser")),2)`, for a difference of `r round(Annoyed_diffmean,2)`, with a confidence interval of `r round(Annoyed_confint$upper,2)` to `r round(Annoyed_confint$lower,2)`.
+
+#### **Conclusion:**
+
+My results demonstrated that The Apprentice: Los Angeles consistently made viewers report feeling more annoyed than My Name is Earl. The actual sample returned a higher mean of reported happiness, and the confidence interval demonstrated statistical significance in the 95% interval.
+
+
+### **Part C:**
+
+#### **Question:**
+
+The question I am trying to answer is what proportion of viewers reported being confused by Dancing With the Stars
+
+#### **Approach:**
+
+In order to answer this question I first found the proportion of those reported a Q2_Confusing score greater than 3 for Dancing with the Stars, then bootstrapped new samples and found the proportions of those in order to report a 95% confidence interval
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+conf = filter(nbc,Show=="Dancing with the Stars")
+conf = mutate(conf,fourup = Q2_Confusing > 3)
+conf_prop = prop(~fourup,data=conf)
+
+conf_boot = do(10000)*prop(~fourup,data=resample(conf))
+
+ggplot(conf_boot,aes(x=prop_TRUE)) +
+  geom_histogram(color="mediumorchid4",fill="mediumorchid3") + xlab("Proportion of Confused Viewers") + ylab("Count") + ggtitle("Dancing with the Stars Confusion") + theme_minimal()
+
+conf_confint = confint(conf_boot,level=.95)
+conf_confint
+```
+
+#### **Results:**
+
+I found that the proportion of viewers who reported feeling confused by Dancing with the Stars was `r round(conf_prop,3)` with a confidence interval of `r round(conf_confint$upper,3)` to `r round(conf_confint$lower,3)`.
+
+#### **Conclusion:**
+
+I found that on average, 7%, plus or minus about 3.5%, found dancing with the stars confusing. Additionally, the results demonstrated statistical significance in the 95% interval. Thus, to most Americans, Dancing with the Stars is not a confusing show
+
+
+------------------------------------------------------------------------
+
+# **Question 4:**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ebay = read.csv("ebay.csv")
+ebay = mutate(ebay,rev_ratio = rev_after/rev_before)
+```
+
+#### **Question:**
+I am investigating whether or not, based on an experiment where Ebay stopped paid search advertising on Google in 70 out of 210 designated market areas, Ebay's paid search advertising on Google contributed extra revenue to the company or if it was a waste of money.
+
+#### **Approach:**
+In order to investigate the question I found the difference in means for the revenue ratio of treatment and control groups, then bootstrapped the sample and found those diffmeans as well. I then plotted the bootstrapped diffmeans and found the confidence interval.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(ebay,aes(x=rev_ratio)) + 
+  geom_histogram(fill="blue",color="blue3") + ggtitle("Distribution of Revenue Ratioes from Sample") + ylab("Count") + xlab("Revenue Ratioes") + theme_minimal() + facet_wrap(~adwords_pause)
+
+ebay_mean = diffmean(~rev_ratio,adwords_pause,data=ebay)
+
+ebay_boot = do(10000)*diffmean(~rev_ratio,adwords_pause, data=resample(ebay))
+
+ggplot(ebay_boot,aes(x=diffmean)) +
+  geom_histogram(color="skyblue1",fill="skyblue2") + ggtitle ("Differences in Means for Treatment and Control Groups") + xlab("Differences in Mean Revenue Ratioes")+ ylab("Count") + theme_minimal()
+
+ebay_confint = confint(ebay_boot,level=.95)
+ebay_confint
+
+```
+#### **Results:**
+
+I found that the mean of treatment group's revenue ratio is `r round(mean(~rev_ratio,data=filter(ebay,adwords_pause == 1)),2)`, while the mean of the control group's is `r round(mean(~rev_ratio,data=filter(ebay,adwords_pause==0)),2)`, for a difference of `r round(ebay_mean,2)`, with a confidence interval of `r round(ebay_confint$upper,2)` to `r round(ebay_confint$lower,2)`.
+
+#### **Conclusion:**
+
+My results demonstrated that designated market areas in the control group demonstrated a higher revenue ratios in my actual and my bootstrapped samples, with statistical significance in the 95% interval. This means that paid search advertising did earn Ebay some extra revenue.
