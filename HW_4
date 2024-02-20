@@ -215,7 +215,8 @@ The question I am trying to answer is which show did people report making them f
 
 #### **Approach:**
 
-In order to answer this question I first found the difference in the reported mean annoyance scores from the sample using diffmean, then bootstrapped new samples and found the diffmeans of those in order to report a 95% confidence interval
+In order to answer this question I first found the difference in the reported mean annoyance scores from the sample using diffmean, then bootstrapped new samples and found the diffmeans of those in order to report a 95% confidence interval.
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 Annoyed = filter(nbc,Show == "The Biggest Loser"|Show=="The Apprentice: Los Angeles")
 Annoyed = mutate(Annoyed,TBL = Show == "The Biggest Loser")
